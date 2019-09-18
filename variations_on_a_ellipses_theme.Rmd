@@ -1,0 +1,507 @@
+---
+title: "Variations on a `...` theme"
+subtitle: "Proposals for `...` in R"
+author: "Doug Kelkhoff @ DSC 2019"
+date: "2019-09-18"
+output:
+  ioslides_presentation:
+    widescreen: true
+    smaller: true
+---
+
+```{r, echo = FALSE}
+suppressPackageStartupMessages(library(dplyr))
+```
+
+
+
+
+
+## First, an ode to `...`
+
+```{r}
+dots_how_do_i_love_thee <- function(...) {
+  cat("let me count the ways... \n")
+  cat(paste(..., sep = "\n"))
+}
+```
+
+```{r}
+dots_how_do_i_love_thee("really flexible", "mirrors natural language", "intuitive")
+```
+
+
+
+
+
+## The `...` are really handy, but can get unwieldy
+
+- Often need to be collapsed into list, thwarting laziness
+- Comes with a cohort of unintuitive operators/functions
+- No way to operate on named ... elements without evaluation (?)
+- Paradigm is only applicable within function calls
+
+```{r}
+dots_how_do_i_love_thee <- function(...) {
+  cat("let me count the ways... \n")
+  cat(paste0("  ", seq(1, ...length()), ". ", list(...), collapse = "\n"))
+}
+
+dots_how_do_i_love_thee("really flexible", "mirrors natural language", "intuitive")
+```
+
+### Some `...` syntax
+
+`...`, `..n`, `...length()`, `...elt()`
+
+
+
+
+
+
+## Variadic functions popular in tons of languages
+
+There are plenty of implementations of this feature, some with quite interesting
+edge case handling
+
+[Rosetta Code: Variatic Functions](www.rosettacode.org/wiki/Variadic_function)
+
+### `python`
+
+```{r, echo = FALSE, results = 'asis'}
+cat("<pre class='prettyprint lang-python'>
+
+def my_func(*args, **kwargs): 
+    other_func(*args, **kwargs)
+    
+</pre>")
+```
+
+### `julia`
+
+```{r, echo = FALSE, results = 'asis'}
+cat("<pre class='prettyprint lang-julia'>
+
+function my_func(args...; kwargs...)
+    other_func(args..., kwargs...)
+end
+ 
+</pre>")
+```
+
+
+
+
+
+
+## Ellipsis leverage language familiarity
+
+### _University of Oxford Style Guide_: 
+
+- "The quick brown fox jumps over the lazy dog… And if they have not died, they are still alive today."
+- "It is not cold… it is freezing cold."
+
+[Wikipedia "Ellipsis"](https://en.wikipedia.org/wiki/Ellipsis#In_British_English)
+
+### They map well to use in verbal languages
+
+- you might expect a list to continue...
+- if followed by an ellipsis
+- ...or a long pause before an end
+
+### To generalize...
+
+- `something ...`: more to come
+- `... something`: finishing something
+
+
+
+
+
+
+
+# How far can we push this familiarity?
+
+## Prompt
+
+<font size="6" style = "line-height: 1.5">
+_Are there ways we can extend our intuition for `...` to other elements of the
+language?_
+</font>
+
+
+
+
+
+## **Idea 1**: Ellipsis unpacking
+
+### Composing function calls in R is high bar for new users
+
+```{r, eval = FALSE}
+args <- list("gone!", sep = ", ")
+cat(do.call(paste, append(list("going", "going"), args)))
+```
+
+- `do.call` assumes pretty strong familiarity of first class functions
+- Argument lists must be composed dynamically
+
+### Instead, could arguments lists be unpacked directly into a call
+
+```{r, eval = FALSE}
+args <- list("gone!", sep = ", ")
+cat(paste("going", "going", ...args))
+```
+
+- Retains familiar function call structure
+- Syntactically cleaner
+- Extends `...` paradigm
+
+
+
+
+
+
+## **Idea 2**: Named Ellipsis Parameters
+
+Taking a page from **Julia**, allow naming of a "rest" argument
+
+```{r, eval = FALSE}
+example <- function(dots...) {
+  # allow for easier subsetting, manipulation without 
+  # collapsing to list(...) or handling eval in parent frame
+  rainbow_cat(...dots, sep = ", ")
+}
+```
+
+`function(rest...) class(rest)  # possibly a list of unevaluated promises?`
+
+
+
+
+
+
+## **Idea 2**: Named Ellipsis Parameters
+
+Taking a page from **Julia**, allow naming of a "rest" argument
+
+```{r, eval = FALSE}
+example <- function(dots...) {
+  # allow for easier subsetting, manipulation without 
+  # collapsing to list(...) or handling eval in parent frame
+  
+  dots <- dots[!names(dots) %in% "sep"]
+  rainbow_cat(...dots, sep = ", ")
+}
+```
+
+But we still need to handle repeated argument names to avoid `...` induced errors
+
+
+
+
+
+
+## **Idea 3**: Better yet, allow repeated arguments
+
+Use ellipses position to indicate precedence
+
+If an argument is passed in ellipses (not explicitly named twice), allow the
+most recent argument to take precedence.
+
+```{r, eval = FALSE}
+example <- function(...) {
+  # fix the 'sep' field regardless of what's in dots
+  rainbow_cat(..., sep = ", ")
+  #  set a default that is overwritten if present in dots
+  rainbow_cat(sep = ", ", ...)
+}
+```
+
+_`julia` implements ellipses passing as a special case where rightmost argument is used_
+
+
+
+
+
+
+## **Idea 4**: Parital Function Application
+
+Appending ellipsis after a function to indicate that it should return a
+partially applied function instead of the call result
+
+```{r, eval = FALSE}
+newline_cat <- cat(sep = "\n")...
+newline_cat("word", "per", "line")
+```
+
+```{r, echo = FALSE}
+cat("word", "per", "line", sep = "\n")
+```
+
+- Retains formals
+- Could propegate documentation
+- Especially helpful for tab completions
+
+
+
+
+
+
+## _Aside_: A mental model for argument unpacking
+
+```
+my_function <- function(a, b, c, d, e = 4, dots...) <stuff> 
+my_args <- list(1, b = 2, c = 3)
+my_function(0, a = 2, ...args)
+```
+
+#### Step 1: Consider the function formals
+
+```{r, echo = FALSE, results = 'asis'}
+cat("<pre class='prettyprint lang-r'>")
+cat("# <- what I passed ->       <--- my_function formals -->", "\n")
+cat("  (0, a = 2, ...args)  ==>  (a, b, c, d, e = 4, dots...)")
+cat("</pre>")
+```
+
+#### Step 2: Fill in formal default values
+
+```{r, echo = FALSE, results = 'asis'}
+cat("<pre class='prettyprint lang-r'>")
+cat("(0, a = 2, 1, b = 2, c = 3, <strong>e = 4</strong>)")
+cat("</pre>")
+```
+
+#### Step 3: Align named arguments
+
+```{r, echo = FALSE, results = 'asis'}
+cat("<pre class='prettyprint lang-r'>")
+cat("(<strong>a = 2, b = 2, c = 3, e = 4</strong>, 0, 1)")
+cat("</pre>")
+```
+
+#### Step 4: Backfill positional arguments
+
+```{r, echo = FALSE, results = 'asis'}
+cat("<pre class='prettyprint lang-r'>")
+cat("(a = 2, b = 2, c = 3, e = 4, <strong>d = 0, dots... = 1</strong>)")
+cat("</pre>")
+```
+
+
+
+
+
+
+## **Idea 5**: Return list unpacking
+
+Mirror list unpacking into function calls with unpacking into assigned return
+values
+
+Syntactically parallels function parameter aliasing
+
+```{r, eval = FALSE}
+(x, y, z...) <- list(w = 1, x = 2, y = 3, z = 3)
+```
+
+```
+> x
+## [1] 2
+
+> y
+## [1] 3
+
+> z
+## $w
+## [1] 1
+## 
+## $z
+## [1] 3
+```
+
+
+## **Idea 5**: Return list unpacking... considerations
+
+- Can we get rid of the `()`'s?
+
+```{r, eval = FALSE}
+x, y, z... <- list(w = 1, x = 2, y = 3, z = 3)
+```
+
+- Requiring unpacking syntax?
+
+```{r, echo = FALSE, eval = FALSE}
+(x, y, z...) <- ...list(w = 1, x = 2, y = 3, z = 3)
+```
+
+```{r, echo = FALSE, results = "asis"}
+# r code for rendering text with emphasis for slides
+
+cat("<pre class='prettyprint lang-r'>")
+cat("(x, y, z...) <- <strong>...</strong>list(w = 1, x = 2, y = 3, z = 3)")
+cat("</pre>")
+```
+
+- Allowing mapping list names to target object names?
+
+```{r, echo = FALSE, eval = FALSE}
+(a = x, b = y, c...) <- list(w = 1, x = 2, y = 3, z = 3)
+```
+
+```{r, echo = FALSE, results = "asis"}
+# r code for rendering text with emphasis for slides
+
+cat("<pre class='prettyprint lang-r'>")
+cat("(<strong>a = x, b = y</strong>, c...) <- list(w = 1, x = 2, y = 3, z = 3)")
+cat("</pre>")
+```
+
+- Should the `rest...` contain _just_ the remaining values or the entire list? 
+- Should it be possible to get both?
+- Worthwhile having a thunk syntax (`_`) to throw away list elements? 
+
+```{r, echo = FALSE, results='asis'}
+cat("<pre class='prettyprint lang-haskell'>")
+cat("
+# taking a page from Haskell
+# getting both entirety of list (list) and sub-components head (x) & remainder (xs)
+f list@(x:xs) = ...
+")
+cat("</pre>")
+```
+
+
+
+
+
+
+## **Idea 6:** Anonymous function shorthand
+
+Draw inspiration from the `purrr` package to create an unambiguous lambda
+function syntax
+
+```{r, eval = FALSE}
+# function(...) ..1 + ..2
+~> ..1 + ..2
+```
+
+```{r, eval = FALSE}
+# function(x, y, ...) x + y
+x, y ~> x + y
+```
+
+- reminescent of `purrr`-style lambda function syntax
+- disambiguates lambdas from formulas (`:symbol` shorthand for `name`?)
+- currently syntactically invalid, so no breaking changes!
+
+### Another alternative for "partial application" 
+
+```{r, eval = FALSE}
+new_cat <- ~>cat(sep = ", ", ...)
+```
+
+_retaining formals and docs require special handling for singular call_
+
+
+
+
+
+
+# Why are these conveniences important to the longevity of the language?
+
+## Enter the `Tidyverse`
+
+The tidyverse, and its incredible mindshare, has begun to implement many of
+these conveniences. 
+
+New users have trouble tracking tidyverse-specific syntax
+
+### Argument unpacking (and unquoting) `!!!`
+
+```{r, eval = FALSE}
+my_mutations <- list(new_var = "new_var")
+mtcars %>% mutate(!!!my_mutations)
+```
+
+### `purrr`-style lambdas (now in `rlang`) `~`
+
+```{r, eval = FALSE}
+mtcars %>% mutate_at(vars(cyl), ~ . * 2)
+```
+
+### `ggplot2` symbol representation
+
+```{r, eval = FALSE}
+ggplot(mtcars) + 
+  aes_(~mpg, ~wt + wt) +  # requires parsing of ~rhs
+  geom_point()
+```
+
+
+
+
+
+
+## Reconciling the Tidyverse
+
+Some of the proposed syntax can be used to bring consistency to the
+tidyverse/base bifurcation
+
+### Argument unpacking
+
+```{r, eval = FALSE}
+my_mutations <- list(new_var = "new_var")
+mtcars %>% mutate(...my_mutations)
+```
+
+_handles unpacking, but not unquoting_
+
+### Lambdas
+
+```{r, eval = FALSE}
+mtcars %>% mutate_at(vars(cyl), x ~> x * 2)
+```
+
+### Name Notation
+
+```{r, eval = FALSE}
+ggplot(mtcars) + 
+  aes(:mpg, :wt + :wt) + 
+  geom_point()
+```
+
+
+
+
+
+
+## Closing Thoughts
+
+```{r, eval = FALSE}
+dots_how_do_i_love_thee <- function(dots...) {
+  class(dots)                             # - list of unevaluateded promise?
+  names(dots)                             # - operate on list without evaluating
+  (pdots, ndots) <- ...split_named(dots)  # - define helpers that keep laxiness
+  cat("let me count the ways... \n")
+  cat(paste0("  ", seq_along(pdots), ". ", pdots, collapse = "\n", ...ndots, sep = " "))
+}
+```
+
+- `...` is awesome syntactic feature in R, balancing usability against readability
+- Offers opportunities for expanding on paradigm
+- Developers benefit from handling `rest...` args without breaking laziness
+- Users benefit from consistency of `...` arguments
+- Consistency among package implementations reduces bucketing of expectations (e.g. `tidyverse` vs `base`)
+
+
+
+
+
+
+## Questions & Discussion
+
+### Special Thanks
+
+Michael Lawrence, Gabe Becker
+
+Genentech, Roche
