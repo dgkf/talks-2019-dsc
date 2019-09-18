@@ -169,7 +169,7 @@ Taking a page from **Julia**, allow naming of a "rest" argument
 example <- function(dots...) {
   # allow for easier subsetting, manipulation without 
   # collapsing to list(...) or handling eval in parent frame
-  rainbow_cat(...dots, sep = ", ")
+  cat(...dots, sep = ", ")
 }
 ```
 
@@ -182,7 +182,7 @@ example <- function(dots...) {
 
 ## **Idea 2**: Named Ellipsis Parameters
 
-Taking a page from **Julia**, allow naming of a "rest" argument
+Taking a page from **Julia & LISP**, allow naming of a "rest" argument
 
 ```{r, eval = FALSE}
 example <- function(dots...) {
@@ -190,7 +190,7 @@ example <- function(dots...) {
   # collapsing to list(...) or handling eval in parent frame
   
   dots <- dots[!names(dots) %in% "sep"]
-  rainbow_cat(...dots, sep = ", ")
+  cat(...dots, sep = ", ")
 }
 ```
 
@@ -211,9 +211,9 @@ most recent argument to take precedence.
 ```{r, eval = FALSE}
 example <- function(...) {
   # fix the 'sep' field regardless of what's in dots
-  rainbow_cat(..., sep = ", ")
+  cat(..., sep = ", ")
   #  set a default that is overwritten if present in dots
-  rainbow_cat(sep = ", ", ...)
+  cat(sep = ", ", ...)
 }
 ```
 
