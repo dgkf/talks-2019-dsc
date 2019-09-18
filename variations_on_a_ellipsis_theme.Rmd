@@ -83,7 +83,7 @@ def my_func(*args, **kwargs):
 cat("<pre class='prettyprint lang-julia'>
 
 function my_func(args...; kwargs...)
-    other_func(args..., kwargs...)
+    other_func(args...; kwargs...)
 end
  
 </pre>")
