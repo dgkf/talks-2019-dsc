@@ -217,7 +217,7 @@ example <- function(...) {
 }
 ```
 
-_`julia` implements ellipses passing as a special case where rightmost argument is used_
+_`julia` implements ellipsis passing as a special case where rightmost argument is used_
 
 
 
@@ -251,7 +251,7 @@ cat("word", "per", "line", sep = "\n")
 
 ```
 my_function <- function(a, b, c, d, e = 4, dots...) <stuff> 
-my_args <- list(1, b = 2, c = 3)
+args <- list(1, b = 2, c = 3)
 my_function(0, a = 2, ...args)
 ```
 
@@ -259,8 +259,8 @@ my_function(0, a = 2, ...args)
 
 ```{r, echo = FALSE, results = 'asis'}
 cat("<pre class='prettyprint lang-r'>")
-cat("# <- what I passed ->       <--- my_function formals -->", "\n")
-cat("  (0, a = 2, ...args)  ==>  (a, b, c, d, e = 4, dots...)")
+cat("# <----- what I passed ----->       <--- my_function formals -->", "\n")
+cat("  (0, a = 2, 1, b = 2, c = 3)  ==>  (a, b, c, d, e = 4, dots...)")
 cat("</pre>")
 ```
 
@@ -392,7 +392,6 @@ x, y ~> x + y
 
 - reminescent of `purrr`-style lambda function syntax
 - disambiguates lambdas from formulas (`:symbol` shorthand for `name`?)
-- currently syntactically invalid, so no breaking changes!
 
 ### Another alternative for "partial application" 
 
