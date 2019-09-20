@@ -480,7 +480,7 @@ ggplot(mtcars) +
 dots_how_do_i_love_thee <- function(dots...) {
   class(dots)                             # - list of unevaluateded promise?
   names(dots)                             # - operate on list without evaluating
-  (pdots, ndots) <- ...split_named(dots)  # - define helpers that keep laxiness
+  (pdots, ndots) <- ...split_named(dots)  # - define helpers that keep laziness
   cat("let me count the ways... \n")
   cat(paste0("  ", seq_along(pdots), ". ", pdots, collapse = "\n", ...ndots, sep = " "))
 }
